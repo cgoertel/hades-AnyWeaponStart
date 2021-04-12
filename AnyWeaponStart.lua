@@ -186,33 +186,63 @@ AnyWeaponStart.AspectData = {
     }
 }
 
-local function EquipStartWeapon()
-    local weaponAspectData = AnyWeaponStart.AspectData[AnyWeaponStart.Config.StartingAspect]
-    EquipPlayerWeapon(WeaponData[weaponAspectData.WeaponName], { PreLoadBinks = true })
+local function EquipAspect(weaponName, traitName, rarityIndex)
+    EquipPlayerWeapon(WeaponData[weaponName], { PreLoadBinks = true })
 
-    -- handling rarity edge cases (invalid 0s, zag aspects)
-    if AnyWeaponStart.Config.StartingRarity == 0 then
-        --invalid 0 rarity (not zag aspect), defaulting to common
-        if string.sub(AnyWeaponStart.Config.StartingAspect, 3, 3) ~= "1" then
-            AddTraitToHero({ TraitName = weaponAspectData.TraitName, Rarity = GetRarityKey(1)})
-        else
-            return
-        end
-    else
-        AddTraitToHero({ TraitName = weaponAspectData.TraitName, Rarity = GetRarityKey(AnyWeaponStart.Config.StartingRarity)})
+    if rarityIndex ~= 0 then
+        AddTraitToHero({ TraitName = traitName, Rarity = GetRarityKey(rarityIndex)})
     end
 end
 
 ModUtil.WrapBaseFunction( "StartNewGame", 
     function(baseFunc)
         baseFunc()
-        EquipStartWeapon()
+
+        local weaponAspectData = AnyWeaponStart.AspectData[AnyWeaponStart.Config.StartingAspect]
+
+        -- handling invalid level 0 rarity
+        if (AnyWeaponStart.Config.StartingRarity == 0 and string.sub(AnyWeaponStart.Config.StartingAspect, 3, 3) ~= "1") then
+            local rarityIndex = 1
+        else
+            local rarityIndex = AnyWeaponStart.Config.StartingRarity
+        end
+
+        EquipAspect(weaponAspectData.WeaponName, weaponAspectData.TraitName, rarityIndex)
+
+        GameState.AnyWeaponStartConfig = { 
+            WeaponName = weaponAspectData.WeaponName,
+            TraitName = weaponAspectData.TraitName,
+            RarityIndex = rarityIndex
+        }
     end, AnyWeaponStart
 )
 
 ModUtil.WrapBaseFunction("StartDeathLoopPresentation", 
     function ( baseFunc, currentRun )
 	    baseFunc( currentRun )
-	    EquipStartWeapon()
+
+        if GameState.AnyWeaponStartConfig then
+	        EquipAspect(
+                GameState.AnyWeaponStartConfig.WeaponName,
+                GameState.AnyWeaponStartConfig.TraitName,
+                GameState.AnyWeaponStartConfig.RarityIndex
+            )
+        end
+    end, AnyWeaponStart
+)
+
+ModUtil.WrapBaseFunction("StartNewRun",
+    function ( baseFunc, prevRun, args )
+        local run = baseFunc( prevRun, args )
+
+        if GameState.AnyWeaponStartConfig then
+	        EquipAspect(
+                GameState.AnyWeaponStartConfig.WeaponName,
+                GameState.AnyWeaponStartConfig.TraitName,
+                GameState.AnyWeaponStartConfig.RarityIndex
+            )
+        end
+    
+        return run
     end, AnyWeaponStart
 )
