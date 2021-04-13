@@ -14,8 +14,8 @@ ModUtil.RegisterMod( "AnyWeaponStart" )
 -- Update config to match desired Aspect + Rarity level. Details below. 
 -- Default config loads Common (Level 1) Aspect of Arthur, code "SB4", rarity 1
 local config = {
-    StartingAspect = "SB4",
-    StartingRarity = 1
+    StartingAspect = "SC1",
+    StartingRarity = "Base"
 }
 
 --[[
@@ -51,14 +51,14 @@ local config = {
     AR3: Adamant Rail, Aspect of Hestia
     AR4: Adamant Rail, Aspect of Lucifer
 
-    StartingRarity Codes (integer):
+    StartingRarity Codes (string):
 
-    0 - Base form of Aspects of Zagreus (no bonus). If used for a non-Zagreus aspect, will default to Common (Level 1)
-    1 - Common (Level 1)
-    2 - Rare (Level 2)
-    3 - Epic (Level 3)
-    4 - Heroic (Level 4)
-    5 - Legendary (Level 5)
+    Base      - Base form of Aspects of Zagreus (no bonus). If used for a non-Zagreus aspect, will default to Common (Level 1)
+    Common    - Level 1
+    Rare      - Level 2
+    Epic      - Level 3
+    Heroic    - Level 4
+    Legendary - Level 5
 ]]
 
 AnyWeaponStart.Config = config
@@ -186,11 +186,11 @@ AnyWeaponStart.AspectData = {
     }
 }
 
-local function EquipAspect(weaponName, traitName, rarityIndex)
+local function EquipAspect(weaponName, traitName, traitRarity)
     EquipPlayerWeapon(WeaponData[weaponName], { PreLoadBinks = true })
 
-    if rarityIndex ~= 0 then
-        AddTraitToHero({ TraitName = traitName, Rarity = GetRarityKey(rarityIndex)})
+    if traitRarity ~= "Base" then
+        AddTraitToHero({ TraitName = traitName, Rarity = traitRarity })
     end
 end
 
@@ -201,18 +201,20 @@ ModUtil.WrapBaseFunction( "StartNewGame",
         local weaponAspectData = AnyWeaponStart.AspectData[AnyWeaponStart.Config.StartingAspect]
 
         -- handling invalid level 0 rarity
-        if (AnyWeaponStart.Config.StartingRarity == 0 and string.sub(AnyWeaponStart.Config.StartingAspect, 3, 3) ~= "1") then
-            local rarityIndex = 1
+        local traitRarity
+        if (AnyWeaponStart.Config.StartingRarity == "Base" and string.sub(AnyWeaponStart.Config.StartingAspect, 3, 3) ~= "1") then
+            traitRarity = "Common"
         else
-            local rarityIndex = AnyWeaponStart.Config.StartingRarity
+            traitRarity = AnyWeaponStart.Config.StartingRarity
         end
 
-        EquipAspect(weaponAspectData.WeaponName, weaponAspectData.TraitName, rarityIndex)
+        EquipAspect(weaponAspectData.WeaponName, weaponAspectData.TraitName, traitRarity)
 
+        -- marking savefile with mod params for future runs
         GameState.AnyWeaponStartConfig = { 
             WeaponName = weaponAspectData.WeaponName,
             TraitName = weaponAspectData.TraitName,
-            RarityIndex = rarityIndex
+            TraitRarity = traitRarity
         }
     end, AnyWeaponStart
 )
@@ -225,7 +227,7 @@ ModUtil.WrapBaseFunction("StartDeathLoopPresentation",
 	        EquipAspect(
                 GameState.AnyWeaponStartConfig.WeaponName,
                 GameState.AnyWeaponStartConfig.TraitName,
-                GameState.AnyWeaponStartConfig.RarityIndex
+                GameState.AnyWeaponStartConfig.TraitRarity
             )
         end
     end, AnyWeaponStart
@@ -239,7 +241,7 @@ ModUtil.WrapBaseFunction("StartNewRun",
 	        EquipAspect(
                 GameState.AnyWeaponStartConfig.WeaponName,
                 GameState.AnyWeaponStartConfig.TraitName,
-                GameState.AnyWeaponStartConfig.RarityIndex
+                GameState.AnyWeaponStartConfig.TraitRarity
             )
         end
     
