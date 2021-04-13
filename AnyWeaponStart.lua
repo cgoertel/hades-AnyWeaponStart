@@ -12,10 +12,10 @@
 ModUtil.RegisterMod( "AnyWeaponStart" )
 
 -- Update config to match desired Aspect + Rarity level. Details below. 
--- Default config loads Common (Level 1) Aspect of Arthur, code "SB4", rarity 1
+-- Default config loads Level 1 Aspect of Arthur: code "SB4", rarity "Common" 
 local config = {
-    StartingAspect = "SC1",
-    StartingRarity = "Base"
+    StartingAspect = "SB4",
+    StartingRarity = "Common"
 }
 
 --[[
